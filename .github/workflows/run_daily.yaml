@@ -3,7 +3,7 @@ name: Run Daily
 on:
   schedule:
     - cron: '0 0 * * *'  # This runs every day at midnight UTC
-    workflow_dispatch:
+  workflow_dispatch: 
 
 jobs:
   run-script:
