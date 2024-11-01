@@ -89,13 +89,14 @@ def scrape_docx(doc):
             if re.search("DL",doc_name,re.IGNORECASE) is not None:
 
                 i = 2
+                count = 0
                 while i < len(table.rows):
                     row = table.rows[i]
 
                     # Get time
                     time = row.cells[0].text
 
-                    # Look at last column for DL
+                    # Look at last column for patient
                     pat_name = row.cells[-1].text
                     if re.search("[a-zA-Z][a-zA-Z]",pat_name) is not None:
                         date = " ".join(date_arr[1:-2])
@@ -104,8 +105,10 @@ def scrape_docx(doc):
                             i = i + 1
                             duration = duration + 15
                         events.append(create_event(date_arr,time,duration,pat_name))
-
+                        count = count + 1
                     i = i + 1
+                if count == 0:
+                    events.append(create_available_event(date_arr))
 
     return events
 
@@ -138,6 +141,26 @@ def format_dt(dt):
     """
     return dt.strftime("%Y-%m-%dT%H:%M:%S")
 
+
+def create_available_event(date_arr):
+    _, month_str, day_str, year_str = date_arr
+    month = datetime.strptime(month_str, "%B").month  # Convert month name to month number
+    day = int(day_str)
+    year = int(year_str)
+    date = year + "-" + month + "-" + day
+    event = {
+            'summary': "Available for CTRC",
+            'description': "Scheduled for today",
+            'start': {
+                'date': date,
+                'timeZone': 'America/Denver'
+                },
+            'start': {
+                'date': date,
+                'timeZone': 'America/Denver'
+                },
+            }
+    return event
 
 def create_event(date_arr,time,duration,name):
     """
@@ -184,30 +207,22 @@ def convertUTC(time,timezone="America/Denver"):
     
     return utc_time.isoformat()
 
-def exists(service,calendar,event):
-    """
-    Determine whether an event already exists on the calendar
-    """
-    timeMin = convertUTC(event['start']['dateTime'])
-    timeMax = convertUTC(event['end']['dateTime'])
-    event_list = service.events().list(calendarId=calendar['id'],
-                                       timeMin=timeMin,
-                                       timeMax=timeMax,
-                                       singleEvents=True,
-                                       orderBy='startTime').execute()
-    events = event_list.get("items",[])
-    for e in events:
-        if e['summary'] == event['summary']:
-            return True
-    return False
-
+def clearCalendar(service,calendar):
+    eventList = service.events().list(calendarId=calendar['id']).execute().get('items',[])
+    if not eventList:
+        print("No events found to delete")
+        return
+    print(f"Found {len(eventList)} events. Deleting all...")
+    for event in eventList:
+        try:
+            service.events().delete(calendarId=calendar['id'],eventId=event['id']).execute()
+        except Exception as e:
+            print(f"Failed to delete event {event['id']}")
+    print("Done deleting events")
 
 def upload_events(service,calendar,events):
-    print("Adding",len(events),"scheduled events")
+    print(f"Adding {len(events)} scheduled events")
     for event in events:
-        if exists(service,calendar,event):
-            print("Event already in calendar, skipping")
-            continue
         service.events().insert(calendarId=calendar['id'], body=event).execute()
 
 def get_file_ids(service):
@@ -271,6 +286,7 @@ def main():
 
     # Create a calendar if it doesn't exist and upload all events
     calendar = add_calendar(calendar_service)
+    clearCalendar(calendar_service,calendar)
     upload_events(calendar_service,calendar,events)
 
 if __name__ == '__main__':
