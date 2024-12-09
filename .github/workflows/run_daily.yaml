@@ -2,7 +2,7 @@ name: Run Daily
 
 on:
   schedule:
-    - cron: '15 20 * * *'  # Run every day at 20:15 UTC which is 2:15 MST
+    - cron: '15 21 * * *'  # Run every day at 21:15 UTC which is 2:15 MST
   workflow_dispatch: 
 
 jobs:
