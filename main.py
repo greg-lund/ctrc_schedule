@@ -13,7 +13,6 @@ import pytz
 # If modifying these SCOPES, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 SCOPES += ["https://www.googleapis.com/auth/drive"]
-CALENDAR_ID = "CTRC Physician Schedule"
 FOLDER = "CTRC Schedules"
 
 def open_services():
@@ -40,23 +39,23 @@ def open_services():
     drive_service = build('drive', 'v3', credentials=creds)
     return calendar_service,drive_service
 
-def add_calendar(service):
-    # Check for CALENDAR_ID calendar and create it if it doesn't exist
+def add_calendar(service,calendarName):
+    # Check for calendarName calendar and create it if it doesn't exist
     calendar_list = service.calendarList().list().execute().get('items',[])
     for c in calendar_list:
-        if c['summary'] == CALENDAR_ID:
-            print(CALENDAR_ID,"already exists")
+        if c['summary'] == calendarName:
+            print(calendarName,"already exists")
             return c
     else:
         new_calendar = {
-                'summary': CALENDAR_ID,
+                'summary': calendarName,
                 'timeZone': 'America/Denver'
                 }
         created_calendar = service.calendars().insert(body=new_calendar).execute()
         print(f"Created calendar: {created_calendar['id']}")
         return created_calendar
 
-def scrape_docx(doc):
+def scrape_docx(doc,docName="DL"):
     # Events array
     events = []
 
@@ -80,13 +79,13 @@ def scrape_docx(doc):
             if date_arr[-1] == '':
                 date_arr.pop()
 
-            # Find DL initials in column
+            # Find Docs initials in column
             try:
                 _,doc_name = table.rows[1].cells[-1].text.split("\n")
             except:
                 continue
 
-            if re.search("DL",doc_name,re.IGNORECASE) is not None:
+            if re.search(docName,doc_name,re.IGNORECASE) is not None:
 
                 i = 2
                 count = 0
@@ -263,17 +262,20 @@ def read_file(service,file_id):
 
     return doc
 
-def get_events(service,file_ids):
+def get_events(service,file_ids,docName="DL"):
     """
     Loop through all file_ids and create calendar events
     """
     events = []
     for id in file_ids:
         doc = read_file(service,id)
-        events.extend(scrape_docx(doc))
+        events.extend(scrape_docx(doc,docName))
     return events
 
 def main():
+
+    docNames = ["DL","CR"]
+    calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule"]
 
     # Open services to access google account
     calendar_service,drive_service = open_services()
@@ -281,13 +283,12 @@ def main():
     # Locate all the schedule files
     file_ids = get_file_ids(drive_service)
 
-    # Get events from all these files
-    events = get_events(drive_service,file_ids)
-
-    # Create a calendar if it doesn't exist and upload all events
-    calendar = add_calendar(calendar_service)
-    clearCalendar(calendar_service,calendar)
-    upload_events(calendar_service,calendar,events)
+    # Get events from all these files for each doc
+    for i in range(len(docNames)):
+        events = get_events(drive_service,file_ids,docNames[i])
+        calendar = add_calendar(calendar_service,calendarNames[i])
+        clearCalendar(calendar_service,calendar)
+        upload_events(calendar_service,calendar,events)
 
 if __name__ == '__main__':
     main()
