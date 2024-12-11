@@ -144,9 +144,7 @@ def format_dt(dt):
 def create_available_event(date_arr):
     _, month_str, day_str, year_str = date_arr
     month = datetime.strptime(month_str, "%B").month  # Convert month name to month number
-    day = int(day_str)
-    year = int(year_str)
-    date = year + "-" + month + "-" + day
+    date = year_str + "-" + str(month) + "-" + day_str
     event = {
             'summary': "Available for CTRC",
             'description': "Scheduled for today",
@@ -154,7 +152,7 @@ def create_available_event(date_arr):
                 'date': date,
                 'timeZone': 'America/Denver'
                 },
-            'start': {
+            'end': {
                 'date': date,
                 'timeZone': 'America/Denver'
                 },
