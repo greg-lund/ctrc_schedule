@@ -205,7 +205,7 @@ def convertUTC(time,timezone="America/Denver"):
     return utc_time.isoformat()
 
 def clearCalendar(service,calendar):
-    eventList = service.events().list(calendarId=calendar['id']).execute().get('items',[])
+    eventList = service.events().list(calendarId=calendar['id'],singleEvents=True,maxResults=9999).execute().get('items',[])
     if not eventList:
         print("No events found to delete")
         return
@@ -272,8 +272,8 @@ def get_events(service,file_ids,docName="DL"):
 
 def main():
 
-    docNames = ["DL","CR"]
-    calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule"]
+    docNames = ["DL","CR","LG"]
+    calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule","Laurence CTRC Schedule"]
 
     # Open services to access google account
     calendar_service,drive_service = open_services()
@@ -290,3 +290,9 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule"]
+    #calendar_service,drive_service = open_services()
+    #calendar = add_calendar(calendar_service,calendarNames[0])
+    #result = calendar_service.events().list(calendarId=calendar['id']).execute()
+    #eventList =  result.get('items',[])
+    #print(eventList)
