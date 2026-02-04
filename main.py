@@ -223,7 +223,7 @@ def upload_events(service,calendar,events):
         service.events().insert(calendarId=calendar['id'], body=event).execute()
 
 def get_file_ids(service):
-    results = service.files().list(pageSize=10,fields="nextPageToken, files(id,name)").execute()
+    results = service.files().list(pageSize=100,fields="nextPageToken, files(id,name)").execute()
     items = results.get("files",[])
     files = []
     for item in items:
