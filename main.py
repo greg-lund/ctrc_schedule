@@ -225,6 +225,7 @@ def upload_events(service,calendar,events):
 def get_file_ids(service):
     results = service.files().list(pageSize=10,fields="nextPageToken, files(id,name)").execute()
     items = results.get("files",[])
+    files = []
     for item in items:
         if item['name'] == FOLDER:
             query = "'" + item['id'] + "' in parents"
@@ -232,7 +233,6 @@ def get_file_ids(service):
             items = results.get("files",[])
             if len(items) > 0:
                 key = "^[0-9]{4}-[0-9]+-[0-9]+\.docx"
-                files = []
                 for x in items:
                     if re.search(key,x['name']) is not None:
                         files.append(x['id'])
