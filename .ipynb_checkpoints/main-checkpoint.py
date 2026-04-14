@@ -78,9 +78,6 @@ def scrape_docx(doc,docName="DL"):
             date_arr.pop(0)
             if date_arr[-1] == '':
                 date_arr.pop()
-            if len(date_arr) > 4:
-                print(f"WARNING: len(date_arr) > 4! Selecting first 4 elements. date_arr = {date_arr}")
-                date_arr = date_arr[:4]
 
             # Find Docs initials in column
             try:
@@ -145,9 +142,12 @@ def format_dt(dt):
 
 
 def create_available_event(date_arr):
+    print(f"In create available with date_arr = {date_arr}")
     _, month_str, day_str, year_str = date_arr
     month = datetime.strptime(month_str, "%B").month  # Convert month name to month number
-    date = year_str + "-" + str(month) + "-" + day_str
+    day = int(day_str)
+    year = int(year_str)
+    date = year + "-" + month + "-" + day
     event = {
             'summary': "Available for CTRC",
             'description': "Scheduled for today",
@@ -155,7 +155,7 @@ def create_available_event(date_arr):
                 'date': date,
                 'timeZone': 'America/Denver'
                 },
-            'end': {
+            'start': {
                 'date': date,
                 'timeZone': 'America/Denver'
                 },
@@ -208,7 +208,7 @@ def convertUTC(time,timezone="America/Denver"):
     return utc_time.isoformat()
 
 def clearCalendar(service,calendar):
-    eventList = service.events().list(calendarId=calendar['id'],singleEvents=True,maxResults=9999).execute().get('items',[])
+    eventList = service.events().list(calendarId=calendar['id']).execute().get('items',[])
     if not eventList:
         print("No events found to delete")
         return
@@ -226,9 +226,8 @@ def upload_events(service,calendar,events):
         service.events().insert(calendarId=calendar['id'], body=event).execute()
 
 def get_file_ids(service):
-    results = service.files().list(pageSize=100,fields="nextPageToken, files(id,name)").execute()
+    results = service.files().list(pageSize=10,fields="nextPageToken, files(id,name)").execute()
     items = results.get("files",[])
-    files = []
     for item in items:
         if item['name'] == FOLDER:
             query = "'" + item['id'] + "' in parents"
@@ -236,6 +235,7 @@ def get_file_ids(service):
             items = results.get("files",[])
             if len(items) > 0:
                 key = "^[0-9]{4}-[0-9]+-[0-9]+\.docx"
+                files = []
                 for x in items:
                     if re.search(key,x['name']) is not None:
                         files.append(x['id'])
@@ -275,8 +275,8 @@ def get_events(service,file_ids,docName="DL"):
 
 def main():
 
-    docNames = ["DL","CR","LG"]
-    calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule","Laurence CTRC Schedule"]
+    docNames = ["DL","CR"]
+    calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule"]
 
     # Open services to access google account
     calendar_service,drive_service = open_services()
@@ -293,9 +293,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #calendarNames = ["CTRC Physician Schedule","Christine CTRC Schedule"]
-    #calendar_service,drive_service = open_services()
-    #calendar = add_calendar(calendar_service,calendarNames[0])
-    #result = calendar_service.events().list(calendarId=calendar['id']).execute()
-    #eventList =  result.get('items',[])
-    #print(eventList)
