@@ -128,7 +128,9 @@ def make_datetime(date_arr,time):
      time will be in the following format: "1230"
     """
     _, month_str, day_str, year_str = date_arr
-    month = datetime.strptime(month_str, "%B").month  # Convert month name to month number
+    print(f"Month string: {month_str.strip()}")
+    print(f"datetime.strptime: {datetime.strptime(month_str.strip(), '%B')}")
+    month = datetime.strptime(month_str.strip(), "%B").month  # Convert month name to month number
     day = int(day_str)
     year = int(year_str)
 
